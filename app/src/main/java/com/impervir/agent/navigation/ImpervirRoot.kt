@@ -40,7 +40,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -77,10 +76,19 @@ private val tabs = listOf(
 private class NavControllerNavigator(private val nav: NavHostController) : Navigator {
     override fun open(destination: Destination) = nav.navigate(destination) { launchSingleTop = true }
     override fun back() { nav.popBackStack() }
-    override fun switchTab(destination: Destination) = nav.navigate(destination) {
-        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
+    override fun switchTab(destination: Destination) {
+        // Finishing onboarding clears it from the back stack, so Back from Home leaves the app.
+        val leavingOnboarding = nav.currentDestination?.hasRoute(Destination.Onboarding::class) == true
+        nav.navigate(destination) {
+            if (leavingOnboarding) {
+                popUpTo(nav.graph.id) { inclusive = true }
+            } else {
+                // Home is the root once onboarding is done; tabs keep their own saved state.
+                popUpTo<Destination.Home> { saveState = true }
+                restoreState = true
+            }
+            launchSingleTop = true
+        }
     }
 }
 

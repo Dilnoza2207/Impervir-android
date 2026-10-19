@@ -1,12 +1,16 @@
 package com.impervir.agent.ui.ember
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -31,7 +35,10 @@ data class EmberHands(
 /**
  * The mascot. [tilt] leans the body in degrees, [squash] < 1 squashes / > 1 stretches (for hops and landings),
  * [lookAt] moves the pupils (-1..1 on each axis).
- * Placeholder drawing; replaced by the full animated rig.
+ *
+ * Drawn natively (no bitmaps): a glossy wisp body with a swaying swoosh tip, a face whose eyes blink at random
+ * intervals, and two floating hands posed per mood. Everything runs on one frame clock and springs between moods;
+ * animation only invalidates the draw phase (no recomposition per frame). Below 48dp fine details are skipped.
  */
 @Composable
 fun Ember(
@@ -43,5 +50,24 @@ fun Ember(
     squash: Float = 1f,
     lookAt: Offset? = null,
 ) {
-    Canvas(modifier.size(size)) { drawCircle(Color(0xFFFF5B23)) }
+    val rig = remember { EmberRig().also { it.mood = mood; it.hands = hands; it.lookAt = lookAt } }
+    SideEffect {
+        rig.mood = mood
+        rig.hands = hands
+        rig.tilt = tilt
+        rig.squash = squash
+        rig.lookAt = lookAt
+    }
+    LaunchedEffect(rig) {
+        while (true) withFrameNanos { rig.tick(it) }
+    }
+    val detailed = size >= 48.dp
+    Spacer(
+        modifier
+            .size(size)
+            .drawBehind {
+                rig.frame.intValue // subscribe: redraw on every clock tick
+                rig.draw(this, detailed)
+            },
+    )
 }
