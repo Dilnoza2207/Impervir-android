@@ -19,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -225,7 +224,7 @@ fun PlatformRing(platform: Platform, fraction: Float, count: String, modifier: M
 /** Activity ticker: newest line on top, three visible, older ones slide down and fade. */
 @Composable
 fun ActivityTicker(lines: List<String>) {
-    BoxWithConstraints(Modifier.fillMaxWidth().height(36.dp * 3)) {
+    Box(Modifier.fillMaxWidth().height(36.dp * 3)) {
         val seen = lines.size
         lines.forEachIndexed { i, text ->
             val slot = seen - 1 - i
